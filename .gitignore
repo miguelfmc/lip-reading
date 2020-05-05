@@ -1,0 +1,5 @@
+# pycharm things
+.idea/*
+
+# videos
+data/*.mp4
