@@ -6,6 +6,7 @@ Authors: Alejandro Molina & Miguel Fernandez Montes
 Model
 """
 
+
 import torch
 import torch.nn.functional as F
 
@@ -24,9 +25,10 @@ class Encoder(torch.nn.Module):
     These feature vectors are used as inputs to an LSTM
     """
 
-    def __init__(self):
+    def __init__(self, hidden_size=256, num_layers=3):
         super(Encoder, self).__init__()
         # assume input size is 120
+        # NOTE: move the convolutional block to another class?
         self.conv1 = torch.nn.Conv2d(5, 96, 3, stride=1)  # output: (batch x seq) x 118 x 118 x 96
         self.bn1 = torch.nn.BatchNorm2d(96)
         self.maxpool1 = torch.nn.MaxPool2d(3, stride=2)  # output: (batch x seq) x 58 x 58 x 96
@@ -41,18 +43,17 @@ class Encoder(torch.nn.Module):
 
         # NOTE: increase size of last pooling layer: too many params in FC
         # NOTE: we could use one pooling layer and repeat it several times in forward
-        # NOTE : we could use a global average pooling instead of the final FC layer
+        # NOTE: we could use a global average pooling instead of the final FC layer
 
         self.lstm = torch.nn.LSTM(input_size=512,
-                                  hidden_size=256,
-                                  num_layers=3,
+                                  hidden_size=hidden_size,
+                                  num_layers=num_layers,
                                   batch_first=True)
 
     def forward(self, x):
         # OPTION 1: reshape from batch x seq x channels x h x w -> (batch x seq) x channels x h x w
         batch_size = x.shape[0]
         seq_len = x.shape[1]
-
         x = x.view(-1, 5, 120, 120)
 
         # conv
@@ -79,6 +80,16 @@ class Encoder(torch.nn.Module):
         return out, hn, cn
 
 
+class MLP(torch.nn.Module):
+    def __init__(self, input_size=512, output_size=500):
+        super(MLP, self).__init__()
+        self.fc = torch.nn.Linear(input_size, output_size)
+
+    def forward(self, x):
+        out = self.fc(x)
+        return out
+
+
 class Decoder:
     """
     The Decoder module is heavily based on the SPELL module from Chung et al. (2016).
@@ -93,10 +104,11 @@ class Decoder:
     The Decoder comprises an LSTM and an Attention module.
     """
     # TODO implement Decoder
-    def __init__(self):
-        self.lstm = torch.nn.LSTM(input_size=512,
-                                  hidden_size=512,
-                                  num_layers=3,
+    def __init__(self, input_size, hidden_size, num_layers):
+        super(Decoder, self).__init__()
+        self.lstm = torch.nn.LSTM(input_size=input_size,
+                                  hidden_size=hidden_size,
+                                  num_layers=num_layers,
                                   batch_first=True)
 
     def forward(self, x, out):
@@ -107,10 +119,23 @@ class Attention:
     pass
 
 
-class LipReading:
-    def __init__(self, encoder, decoder):
-        self.encoder = encoder
-        self.decoder = decoder
+class LipReadingWords(torch.nn.Module):
+    def __init__(self, enc_hidden_size=512, enc_num_layers=3):
+        super(LipReadingWords, self).__init__()
+        self.encoder = Encoder(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
+        self.mlp = MLP()  # default dimensions
+
+    def forward(self, x):
+        out_encoder, hn, cn = self.encoder(x)
+        out = self.mlp(hn[-1, :, :])
+        return out
+
+
+class LipReading(torch.nn.Module):
+    def __init__(self, enc_hidden_size=256, enc_num_layers=3, dec_hidden_size=512, dec_hidden_layers=3):
+        super(LipReading, self).__init__()
+        self.encoder = Encoder(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
+        self.decoder = Decoder(hidden_size=dec_hidden_size, num_layers=dec_hidden_layers)
 
     def forward(self):
         pass
