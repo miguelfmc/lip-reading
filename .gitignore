@@ -1,5 +1,6 @@
 # pycharm things
-.idea/*
+*.
+!/.gitignore
 
 # videos
 data/*.mp4
