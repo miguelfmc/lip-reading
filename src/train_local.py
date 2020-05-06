@@ -15,7 +15,6 @@ import os
 import time
 import torch
 from model import LipReadingWords
-# from preprocessing import train_loader, val_loader
 from preprocessing_local import train_loader, val_loader
 
 
@@ -102,8 +101,7 @@ def run(n_epochs: int,
         start_time = time.time()
 
         train_loss = train(model, train_loader, num_iterations, batch_size, optimizer, criterion, device)
-        val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
-        val_loss = 0
+        # val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
 
         end_time = time.time()
 
@@ -142,7 +140,6 @@ def main():
         train_loader=train_loader,
         val_loader=val_loader,
         num_iterations=NUM_ITER,
-
         batch_size=BATCH_SIZE,
         device=device)
 
