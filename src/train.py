@@ -107,11 +107,11 @@ def run(n_epochs: int,
                    os.path.join(os.pardir, CHECKPOINTS_DIR, f'model_LRW_{epoch}.tar'))
 
 
-# try with data_loader as a simple list
-
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device = torch.device('cpu')
 print(f'Using device: {device}')
+
+# try with data_loader as a simple generator of random Tensors
 
 toy_train_loader = ((torch.randn(64, 2, 5, 120, 120), torch.rand([64, 500])) for i in range(2))
 toy_val_loader = ((torch.randn(2, 2, 5, 120, 120), torch.rand([2, 500])) for i in range(2))
