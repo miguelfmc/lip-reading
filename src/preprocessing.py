@@ -85,7 +85,6 @@ def train_loader(num_iterations,batch_size):
         #Initializing parameters
         processed_videos = []
         batch, target = generate_batch(batch_size)
-        print(target)
         for i in batch:
             cap = cv2.VideoCapture(i)
             tmp = np.zeros((MAX_LENGTH,120,120))
@@ -112,7 +111,6 @@ def train_loader(num_iterations,batch_size):
             cap.release()
             cv2.destroyAllWindows()
         inputs  = torch.from_numpy(np.array(processed_videos)).float()
-        print(sys.getsizeof(inputs))
         targets = torch.from_numpy(np.array(target)).long()
         yield (inputs, targets)
 
