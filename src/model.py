@@ -6,7 +6,6 @@ Authors: Alejandro Molina & Miguel Fernandez Montes
 Model
 """
 
-
 import torch
 import torch.nn.functional as F
 
@@ -51,9 +50,9 @@ class Encoder(torch.nn.Module):
                                   batch_first=True)
 
     def forward(self, x):
-        # OPTION 1: reshape from batch x seq x channels x h x w -> (batch x seq) x channels x h x w
         batch_size = x.shape[0]
         seq_len = x.shape[1]
+        # flatten batch_size x seq_len to one dimension
         x = x.view(-1, 5, 120, 120)
 
         # conv
@@ -66,6 +65,57 @@ class Encoder(torch.nn.Module):
         x = self.fc6(x)
 
         # reshape
+        x = x.view(batch_size, seq_len, 512)
+
+        # rnn
+        out, (hn, cn) = self.lstm(x)
+        return out, hn, cn
+
+
+class Encoder3D(torch.nn.Module):
+    """
+    The Encoder3D module is practically the same as the Encoder
+    but it comprises a 3D convolution as front end
+    """
+
+    def __init__(self, hidden_size=256, num_layers=3):
+        super(Encoder3D, self).__init__()
+        self.conv3D = torch.nn.Conv3d(1, 96, kernel_size=(5, 3, 3), stride=1)
+        self.bn1 = torch.nn.BatchNorm2d(96)  # ?
+        self.maxpool1 = torch.nn.MaxPool2d(3, stride=2)  # ?
+        self.conv2 = torch.nn.Conv2d(96, 256, 3, stride=2)  # output: (batch x seq) x 28 x 28 x 256
+        self.bn2 = torch.nn.BatchNorm2d(256)
+        self.maxpool2 = torch.nn.MaxPool2d(3, stride=2)  # output: (batch x seq) x 13 x 13 x 256
+        self.conv3 = torch.nn.Conv2d(256, 512, 3, stride=1, padding=1)  # output: (batch x seq) x 13 x 13 x 512
+        self.conv4 = torch.nn.Conv2d(512, 512, 3, stride=1, padding=1)  # output: (batch x seq) x 13 x 13 x 512
+        self.conv5 = torch.nn.Conv2d(512, 512, 3, stride=1, padding=1)  # output: (batch x seq) x 13 x 13 x 512
+        self.maxpool5 = torch.nn.MaxPool2d(3, stride=2)  # output: (batch x seq) x 6 x 6 x 512
+        self.fc6 = torch.nn.Linear(6 * 6 * 512, 512)  # output: (batch x seq) x 512
+
+        self.lstm = torch.nn.LSTM(input_size=512,
+                                  hidden_size=hidden_size,
+                                  num_layers=num_layers,
+                                  batch_first=True)
+
+    def forward(self, x):
+        # conv 3D
+        x = F.relu(self.conv3D(x))
+
+        batch_size = x.shape[0]
+        seq_len = x.shape[2]
+        x = x.permute(0, 2, 1, 3, 4)
+        x = x.reshape(batch_size * seq_len, 96, 118, 118)
+
+        x = self.maxpool1(self.bn1(x))
+
+        # conv
+        x = self.maxpool2(self.bn2(F.relu(self.conv2(x))))
+        x = self.maxpool5(F.relu(self.conv5(F.relu(self.conv4(F.relu(self.conv3(x)))))))
+
+        # flatten and to FC
+        x = x.view(-1, 6 * 6 * 512)
+        x = self.fc6(x)
+
         x = x.view(batch_size, seq_len, 512)
 
         # rnn
@@ -96,6 +146,7 @@ class Decoder:
 
     The Decoder comprises an LSTM and an Attention module.
     """
+
     # TODO implement Decoder
     def __init__(self, input_size, hidden_size, num_layers):
         super(Decoder, self).__init__()
@@ -113,6 +164,11 @@ class Attention:
 
 
 class LipReadingWords(torch.nn.Module):
+    """
+    Encoder
+    MLP
+    """
+
     def __init__(self, enc_hidden_size=512, enc_num_layers=3, output_size=500):
         super(LipReadingWords, self).__init__()
         self.encoder = Encoder(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
@@ -124,9 +180,25 @@ class LipReadingWords(torch.nn.Module):
         return out
 
 
-class LipReading(torch.nn.Module):
+class Seq2Word(torch.nn.Module):
+    """
+    Encoder3D
+    MLP
+    """
+    def __init__(self, enc_hidden_size=512, enc_num_layers=3, output_size=500):
+        super(Seq2Word, self).__init__()
+        self.encoder = Encoder3D(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
+        self.mlp = MLP(input_size=enc_hidden_size, output_size=output_size)
+
+    def forward(self, x):
+        _, hn, cn = self.encoder(x)
+        out = self.mlp(hn[-1, :, :])
+        return out
+
+
+class Seq2Seq(torch.nn.Module):
     def __init__(self, enc_hidden_size=256, enc_num_layers=3, dec_hidden_size=512, dec_hidden_layers=3):
-        super(LipReading, self).__init__()
+        super(Seq2Seq, self).__init__()
         self.encoder = Encoder(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
         self.decoder = Decoder(hidden_size=dec_hidden_size, num_layers=dec_hidden_layers)
 
