@@ -24,7 +24,7 @@ def train(model: torch.nn.Module,
     epoch_loss = 0
 
     for batch_id, data in enumerate(data_loader):
-        inputs, targets = data[0].to(device), data[1].to(device)
+        inputs, targets = data[0].to(device), data[1].to(device) # change
         targets = targets.argmax(1)
         optimizer.zero_grad()
 
@@ -50,7 +50,7 @@ def evaluate(model: torch.nn.Module,
     with torch.no_grad():
         for batch_id, data in enumerate(data_loader):
             inputs, targets = data[0].to(device), data[1].to(device)
-            targets = targets.argmax(1)
+            targets = targets.argmax(1)  # transforms from one-hot to class index change
             outputs = model(inputs)
 
             loss = criterion(outputs, targets)
@@ -79,7 +79,7 @@ def run(n_epochs: int,
     print('Initializing model...')
 
     model = LipReadingWords().to(device)  # might change?
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)  # might change?
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)  # might change?
     criterion = torch.nn.CrossEntropyLoss()
 
     print('\nTraining...')
