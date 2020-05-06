@@ -94,8 +94,8 @@ def train_loader (num_iterations,batch_size):
             processed_videos.append(sliding_window(tmp[idx, :, :],WINDOW_SIZE))
             cap.release()
             cv2.destroyAllWindows()
-        inputs  = torch.from_numpy(np.array(processed_videos))
-        targets = torch.from_numpy(np.array(target))
+        inputs  = torch.from_numpy(np.array(processed_videos).float())
+        targets = torch.from_numpy(np.array(target).long())
         yield (inputs, targets)
 
 
