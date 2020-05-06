@@ -15,13 +15,14 @@ import os
 import time
 import torch
 from model import LipReadingWords
-from preprocessing import train_loader
+from preprocessing import train_loader, val_loader
 
 
-N_EPOCHS = 2
+N_EPOCHS = 5
 CHECKPOINTS_DIR = 'checkpoints'
 TRAIN_SIZE = 0.25 * 500000  # TODO get this from somewhere else
-NUM_ITER = 10
+BATCH_SIZE = 64
+NUM_ITER = TRAIN_SIZE // BATCH_SIZE
 
 
 def train(model: torch.nn.Module,
@@ -35,9 +36,7 @@ def train(model: torch.nn.Module,
     epoch_loss = 0
 
     for batch_id, data in enumerate(data_loader(num_iterations, batch_size)):
-        # inputs, targets = data[0].to(device), data[1].to(device)  # change
-        inputs, targets = data[0], data[1]  # change
-        print(targets[:5])
+        inputs, targets = data[0].to(device), data[1].to(device)  # change
 
         optimizer.zero_grad()
 
@@ -60,7 +59,7 @@ def evaluate(model: torch.nn.Module,
              batch_size: int,
              criterion: torch.nn.Module,
              device: torch.device):
-    model.eval()  # not sure if necessary
+    model.eval()
     epoch_loss = 0
 
     with torch.no_grad():
@@ -92,17 +91,15 @@ def run(n_epochs: int,
         device: torch.device):
     print('Initializing model...')
 
-    model = LipReadingWords()  # might change?
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)  # might change?
+    model = LipReadingWords()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
     criterion = torch.nn.CrossEntropyLoss()
-
-    print('\nTraining...')
 
     for epoch in range(n_epochs):
         start_time = time.time()
 
         train_loss = train(model, train_loader, num_iterations, batch_size, optimizer, criterion, device)
-        # val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
+        val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
         val_loss = 0
 
         end_time = time.time()
@@ -139,9 +136,9 @@ def main():
 
     run(n_epochs=N_EPOCHS,
         train_loader=train_loader,
-        val_loader=None,
+        val_loader=val_loader,
         num_iterations=NUM_ITER,
-        batch_size=16,
+        batch_size=BATCH_SIZE,
         device=device)
 
 
