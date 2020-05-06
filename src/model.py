@@ -120,10 +120,10 @@ class Attention:
 
 
 class LipReadingWords(torch.nn.Module):
-    def __init__(self, enc_hidden_size=512, enc_num_layers=3):
+    def __init__(self, enc_hidden_size=512, enc_num_layers=3, output_size=500):
         super(LipReadingWords, self).__init__()
         self.encoder = Encoder(hidden_size=enc_hidden_size, num_layers=enc_num_layers)
-        self.mlp = MLP()  # default dimensions
+        self.mlp = MLP(input_size=enc_hidden_size, output_size=output_size)
 
     def forward(self, x):
         out_encoder, hn, cn = self.encoder(x)

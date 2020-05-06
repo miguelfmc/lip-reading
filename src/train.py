@@ -20,7 +20,7 @@ from preprocessing import train_loader, val_loader
 
 N_EPOCHS = 5
 CHECKPOINTS_DIR = 'checkpoints'
-TRAIN_SIZE = 0.25 * 500000  # TODO get this from somewhere else
+TRAIN_SIZE = 0.25 * 500000
 BATCH_SIZE = 64
 NUM_ITER = TRAIN_SIZE // BATCH_SIZE
 
@@ -32,11 +32,11 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           criterion: torch.nn.Module,
           device: torch.device):
-    model.train()  # not sure if necessary
+    model.train()
     epoch_loss = 0
 
     for batch_id, data in enumerate(data_loader(num_iterations, batch_size)):
-        inputs, targets = data[0].to(device), data[1].to(device)  # change
+        inputs, targets = data[0].to(device), data[1].to(device)
 
         optimizer.zero_grad()
 
@@ -91,7 +91,7 @@ def run(n_epochs: int,
         device: torch.device):
     print('Initializing model...')
 
-    model = LipReadingWords()
+    model = LipReadingWords().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
     criterion = torch.nn.CrossEntropyLoss()
 
