@@ -6,58 +6,74 @@ Authors: Alejandro Molina & Miguel Fernandez Montes
 Script for training and evaluating model
 """
 
+# TODO change num_batches
+# TODO lr scheduler
+# TODO weight init
+
+
 import os
 import time
 import torch
-from src.model import Encoder, Decoder, Attention, LipReading, LipReadingWords
+from model import LipReadingWords
+from preprocessing import train_loader
 
+
+N_EPOCHS = 2
 CHECKPOINTS_DIR = 'checkpoints'
-num_batches = 2  # TODO get this from somewhere else
+TRAIN_SIZE = 0.25 * 500000  # TODO get this from somewhere else
+NUM_ITER = 10
 
 
 def train(model: torch.nn.Module,
           data_loader,
+          num_iterations: int,
+          batch_size: int,
           optimizer: torch.optim.Optimizer,
           criterion: torch.nn.Module,
           device: torch.device):
     model.train()  # not sure if necessary
     epoch_loss = 0
 
-    for batch_id, data in enumerate(data_loader):
-        inputs, targets = data[0].to(device), data[1].to(device) # change
-        targets = targets.argmax(1)
+    for batch_id, data in enumerate(data_loader(num_iterations, batch_size)):
+        # inputs, targets = data[0].to(device), data[1].to(device)  # change
+        inputs, targets = data[0], data[1]  # change
+        print(targets[:5])
+
         optimizer.zero_grad()
 
         outputs = model(inputs)
 
         loss = criterion(outputs, targets)
+        print(f'Loss on batch: {loss}')
         loss.backward()
 
         optimizer.step()
 
         epoch_loss += loss.item()
 
-    return epoch_loss / num_batches
+    return epoch_loss / num_iterations
 
 
 def evaluate(model: torch.nn.Module,
              data_loader,
+             num_iterations: int,
+             batch_size: int,
              criterion: torch.nn.Module,
              device: torch.device):
     model.eval()  # not sure if necessary
     epoch_loss = 0
 
     with torch.no_grad():
-        for batch_id, data in enumerate(data_loader):
+        for batch_id, data in enumerate(data_loader(num_iterations, batch_size)):
             inputs, targets = data[0].to(device), data[1].to(device)
-            targets = targets.argmax(1)  # transforms from one-hot to class index change
+
             outputs = model(inputs)
 
             loss = criterion(outputs, targets)
 
             epoch_loss += loss.item()
 
-    return epoch_loss / num_batches
+    return epoch_loss / num_iterations
 
 
 def epoch_time(start_time: int,
@@ -71,25 +87,23 @@ def epoch_time(start_time: int,
 def run(n_epochs: int,
         train_loader,
         val_loader,
-        device: torch.device
-        ):
-    # for simple word model
-    # TODO implement data loading and preprocessing
-
+        num_iterations,
+        batch_size,
+        device: torch.device):
     print('Initializing model...')
 
-    model = LipReadingWords().to(device)  # might change?
+    model = LipReadingWords()  # might change?
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)  # might change?
     criterion = torch.nn.CrossEntropyLoss()
 
     print('\nTraining...')
 
-    # this code is adapted from PyTorch Seq2Seq tutorial
     for epoch in range(n_epochs):
         start_time = time.time()
 
-        train_loss = train(model, train_loader, optimizer, criterion, device)
-        val_loss = evaluate(model, val_loader, criterion, device)
+        train_loss = train(model, train_loader, num_iterations, batch_size, optimizer, criterion, device)
+        # val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
+        val_loss = 0
 
         end_time = time.time()
 
@@ -107,15 +121,29 @@ def run(n_epochs: int,
                    os.path.join(os.pardir, CHECKPOINTS_DIR, f'model_LRW_{epoch}.tar'))
 
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
-print(f'Using device: {device}')
-
 # try with data_loader as a simple generator of random Tensors
 
-toy_train_loader = ((torch.randn(64, 2, 5, 120, 120), torch.rand([64, 500])) for i in range(2))
-toy_val_loader = ((torch.randn(2, 2, 5, 120, 120), torch.rand([2, 500])) for i in range(2))
-run(n_epochs=1, train_loader=toy_train_loader, val_loader=toy_val_loader, device=device)
+# toy_train_loader = ((torch.randn(2, 2, 5, 120, 120), torch.Tensor([12, 50])) for i in range(3))
+# toy_val_loader = ((torch.randn(2, 2, 5, 120, 120), torch.Tensor([14, 65])) for i in range(3))
+# run(n_epochs=1,
+#     train_loader=toy_train_loader,
+#     val_loader=toy_val_loader,
+#     num_iterations=3,
+#     batch_size=2,
+#     device=device)
 
-# TODO weight init
-# TODO optimizer config
+
+def main():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device: {device}')
+
+    run(n_epochs=N_EPOCHS,
+        train_loader=train_loader,
+        val_loader=None,
+        num_iterations=NUM_ITER,
+        batch_size=16,
+        device=device)
+
+
+if __name__ == '__main__':
+    main()
