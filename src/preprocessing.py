@@ -10,6 +10,7 @@ Pre-processing tools
 import numpy as np
 import torch
 import os
+import sys
 import cv2
 
 import matplotlib.pyplot as plt
@@ -50,8 +51,8 @@ def generate_batch(batch_size):
     batch = ['/home/alemosan/lipReading/data/' + str(random_folder[i]) + \
              '/train/'+str(random_folder[i])+'_'+str(random_number[i]).zfill(5)+'.mp4' for i in range(batch_size)]
     t = np.array([WORD_DICTIONARY.index(l) for l in random_folder])
-    print(batch)
     return  batch,t
+
 
 def generate_batch_val(batch_size):
     """
@@ -68,11 +69,9 @@ def generate_batch_val(batch_size):
     batch = ['/home/alemosan/lipReading/data/' + str(random_folder[i]) + \
              '/val/'+str(random_folder[i])+'_'+str(random_number[i]).zfill(5)+'.mp4' for i in range(batch_size)]
     t = np.array([WORD_DICTIONARY.index(l) for l in random_folder])
-    print(batch)
     return  batch,t
     
     
-
 def train_loader(num_iterations,batch_size):
     """
     Input  2 ints with the number of iterations and the batch_size
@@ -86,6 +85,7 @@ def train_loader(num_iterations,batch_size):
         #Initializing parameters
         processed_videos = []
         batch, target = generate_batch(batch_size)
+        print(target)
         for i in batch:
             cap = cv2.VideoCapture(i)
             tmp = np.zeros((MAX_LENGTH,120,120))
@@ -111,10 +111,12 @@ def train_loader(num_iterations,batch_size):
             processed_videos.append(sliding_window(tmp[idx, :, :],WINDOW_SIZE))
             cap.release()
             cv2.destroyAllWindows()
-        inputs  = torch.from_numpy(np.array(processed_videos).float())
-        targets = torch.from_numpy(np.array(target).long())
+        inputs  = torch.from_numpy(np.array(processed_videos)).float()
+        print(sys.getsizeof(inputs))
+        targets = torch.from_numpy(np.array(target)).long()
         yield (inputs, targets)
 
+        
 def val_loader(num_iterations,batch_size):
     """
     Input  2 ints with the number of iterations and the batch_size
@@ -153,8 +155,8 @@ def val_loader(num_iterations,batch_size):
             processed_videos.append(sliding_window(tmp[idx, :, :],WINDOW_SIZE))
             cap.release()
             cv2.destroyAllWindows()
-        inputs  = torch.from_numpy(np.array(processed_videos).float())
-        targets = torch.from_numpy(np.array(target).long())
+        inputs  = torch.from_numpy(np.array(processed_videos)).float()
+        targets = torch.from_numpy(np.array(target)).long()
         yield (inputs, targets)
 
 

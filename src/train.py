@@ -20,9 +20,9 @@ from preprocessing import train_loader, val_loader
 
 N_EPOCHS = 5
 CHECKPOINTS_DIR = 'checkpoints'
-TRAIN_SIZE = 0.25 * 500000
-BATCH_SIZE = 64
-NUM_ITER = TRAIN_SIZE // BATCH_SIZE
+TRAIN_SIZE = 0.25 * 500_000
+BATCH_SIZE = 8
+NUM_ITER = int(TRAIN_SIZE / BATCH_SIZE)
 
 
 def train(model: torch.nn.Module,
@@ -42,8 +42,13 @@ def train(model: torch.nn.Module,
 
         outputs = model(inputs)
 
-        loss = criterion(outputs, targets)
-        print(f'Loss on batch: {loss}')
+        try:
+            loss = criterion(outputs, targets)
+            print(f'Loss on batch: {loss}')
+        except:
+            print(outputs)
+            print(targets)
+        
         loss.backward()
 
         optimizer.step()
@@ -92,7 +97,7 @@ def run(n_epochs: int,
     print('Initializing model...')
 
     model = LipReadingWords().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     criterion = torch.nn.CrossEntropyLoss()
 
     for epoch in range(n_epochs):
@@ -100,7 +105,6 @@ def run(n_epochs: int,
 
         train_loss = train(model, train_loader, num_iterations, batch_size, optimizer, criterion, device)
         val_loss = evaluate(model, val_loader, num_iterations, batch_size, criterion, device)
-        val_loss = 0
 
         end_time = time.time()
 

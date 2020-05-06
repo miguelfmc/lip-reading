@@ -57,16 +57,9 @@ class Encoder(torch.nn.Module):
         x = x.view(-1, 5, 120, 120)
 
         # conv
-        x = F.relu(self.conv1(x))
-        x = self.bn1(x)
-        x = self.maxpool1(x)
-        x = F.relu(self.conv2(x))
-        x = self.bn2(x)
-        x = self.maxpool2(x)
-        x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
-        x = F.relu(self.conv5(x))
-        x = self.maxpool5(x)
+        x = self.maxpool1(self.bn1(F.relu(self.conv1(x))))
+        x = self.maxpool2(self.bn2(F.relu(self.conv2(x))))
+        x = self.maxpool5(F.relu(self.conv5(F.relu(self.conv4(F.relu(self.conv3(x)))))))
 
         # flatten and to FC
         x = x.view(-1, 6 * 6 * 512)
@@ -126,7 +119,7 @@ class LipReadingWords(torch.nn.Module):
         self.mlp = MLP(input_size=enc_hidden_size, output_size=output_size)
 
     def forward(self, x):
-        out_encoder, hn, cn = self.encoder(x)
+        _, hn, cn = self.encoder(x)
         out = self.mlp(hn[-1, :, :])
         return out
 
