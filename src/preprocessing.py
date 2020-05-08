@@ -53,8 +53,12 @@ def dict_loader(d,size):
         WORD_DICTIONARY_2.remove(WORD_DICTIONARY_2[idx])
     return d
 
+def load_global_dict():
+    global WORD_DICTIONARY_2 
+    WORD_DICTIONARY_2  = WORD_DICTIONARY.copy()
 
-def generate_batch(batch_size, n, num_iteration,epoc,dictionary):
+
+def generate_batch(batch_size, n, num_iteration,epoch,dictionary):
     """
     Input  batch_size of the batch.
     Returns an array with the path to the files and the targets of each videos.
@@ -63,13 +67,9 @@ def generate_batch(batch_size, n, num_iteration,epoc,dictionary):
     :return: two numpy array containing the batch and the targets.
     """
     
-    print('W1',len(WORD_DICTIONARY))
-    print('W2',len(WORD_DICTIONARY_2))
     level = ( (n+1) / num_iteration) * 100
-    print('level',level)
-
     
-    if  epoc  == 0:
+    if  epoch  == 0:
         if level > 80:
         #Total dictionary -- Words = 500
             if not(len(dictionary) == 500):
@@ -127,11 +127,13 @@ def generate_batch(batch_size, n, num_iteration,epoc,dictionary):
             if not (len(dictionary) == 10):
                 dictionary = dict_loader(dictionary,10)    
 
-    #else when the epoc is different from the frist epoch in which we applied the curriculum learning
+    #else when the epoch is different from the frist epoch in which we applied the curriculum learning
     else:
-        dictionary = dict_loader(dictionary,500)
+        load_global_dict()
+        if not(len(dictionary) == 500):
+            dictionary = dict_loader(dictionary,500)
     
-    #Possible folders that I can take a video
+    #folders that I can take a video
     videos = np.array(list(dictionary.keys()))
     
     random_folder = videos[np.random.choice(len(videos), size=batch_size, replace = True)]
