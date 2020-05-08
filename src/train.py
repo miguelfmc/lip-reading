@@ -16,6 +16,7 @@ import sys
 import glob
 import time
 import torch
+import config
 from model import LipReadingWords
 from preprocessing import train_loader, val_loader
 
