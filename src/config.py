@@ -1,15 +1,6 @@
 #Config file
-model = dict (
-	name = 'Model ',
-	file = 'ble ble',
-	check_dir = "/home/alemosan/lipReading/checkpoints/",
-	mode = "Train",
-	loading = False,
-	path_load = "/home/alemosan/lipReading/checkpoints/"
-)
-
-parameters= dict(
-	name = "SGD",
+parameters = dict(
+    name = "SGD",
     lr = 0.01 ,
     lr_scheduler = "constant",
     lr_decay = 0.8,
@@ -19,10 +10,17 @@ parameters= dict(
     momentum = 0.9
     )
 
-data_args = dict (
-	num_epochs = 5,
-    batch_size = 32,
-    train_size = 0.25 *500_000 #Number of training points
-)
 
+NUM_EPOCHS = 10
+BATCH_SIZE = 8
+TRAIN_SIZE = 32000
+VAL_SIZE = 15000
+MODE = 'train'
 
+CHECKPOINTS_DIR = "/home/alemosan/lipReading/checkpoints/"
+LOGS_DIR = "/home/alemosan/lipReading/logs/model_LRW_run_4/"
+LOAD_MODEL = True
+LOAD_PATH = "/home/alemosan/lipReading/checkpoints/"
+LOAD_NAME = "model_LRW_run_4_11.tar"
+SAVE_PATH = "/home/alemosan/lipReading/checkpoints/"
+SAVE_NAME = "model_LRW_run_4"
